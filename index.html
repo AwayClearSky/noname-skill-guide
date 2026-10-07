@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+	<meta name="description" content="写给玩家的《无名杀》技能编写教程 —— 把脑子里的技能点子变成游戏里真能用的东西。共 31 章 + 2 份附录。">
+	<meta name="author" content="二刀阵">
+	<title>无名杀技能编写教程</title>
+
+	<!-- 主题样式（本地文件） -->
+	<link rel="stylesheet" href="lib/vue.css">
+
+	<style>
+	/* ═══════════════════════════════════════════════════
+	   一、字体：全部走系统字体，不请求任何外部字体服务
+	   （vue.css 自带的 Google Fonts @import 已移除 —— 国内
+	     访问不了，会把整页渲染卡住）
+	   ═══════════════════════════════════════════════════ */
+	body,
+	.markdown-section,
+	.sidebar {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+			"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+			"Source Han Sans SC", "Noto Sans CJK SC", sans-serif;
+	}
+	code, kbd, pre, samp,
+	.markdown-section code,
+	.markdown-section pre {
+		font-family: "Cascadia Code", "JetBrains Mono", "Fira Code",
+			Consolas, "Courier New", "Microsoft YaHei", monospace;
+		font-size: 0.92em;
+	}
+
+	/* ═══════════════════════════════════════════════════
+	   二、版式：宽表格与代码块允许横向滚动
+	   （本教程有 5349 行表格、最宽一行 350 字符；
+	     另有 98 行代码超过 100 字符）
+	   ═══════════════════════════════════════════════════ */
+	.markdown-section table {
+		display: block;
+		overflow-x: auto;
+		max-width: 100%;
+	}
+	.markdown-section pre {
+		overflow-x: auto;
+	}
+	.markdown-section {
+		max-width: 900px;
+	}
+
+	/* ═══════════════════════════════════════════════════
+	   三、侧边栏：一共 34 条目录，加窄滚动条与分组间距
+	   ═══════════════════════════════════════════════════ */
+	.sidebar {
+		width: 310px;
+	}
+	.sidebar::-webkit-scrollbar {
+		width: 6px;
+	}
+	.sidebar::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, .18);
+		border-radius: 3px;
+	}
+	.sidebar-nav > ul > li > p {
+		margin: 18px 0 6px;
+		font-weight: 700;
+		color: #222;
+	}
+
+	/* ═══════════════════════════════════════════════════
+	   四、代码块右上角的「复制」按钮
+	   ═══════════════════════════════════════════════════ */
+	.docsify-copy-code-button {
+		font-size: 12px;
+		font-family: inherit;
+	}
+
+	/* ═══════════════════════════════════════════════════
+	   五、页面底部「上一章 / 下一章」
+	   ═══════════════════════════════════════════════════ */
+	.docsify-pagination-container {
+		margin-top: 3em;
+	}
+	</style>
+</head>
+
+<body>
+	<div id="app">正在加载教程…</div>
+
+	<script>
+	window.$docsify = {
+		/* ── 站点标识 ────────────────────────────────── */
+		name: '无名杀技能编写教程',
+		nameLink: '#/',   // 用 hash 首页路由：GitHub Pages 部署在 /<仓库名>/ 子目录下也不会跳错
+		homepage: 'README.md',
+
+		/* ── 导航 ────────────────────────────────────── */
+		loadSidebar: true,   // 读取 _sidebar.md，生成左侧目录
+		subMaxLevel: 2,      // 目录里再列出「当前这一章」的二级标题，方便跳转
+		maxLevel: 3,         // 正文里写 [TOC] 时最多展开到三级标题
+		auto2top: true,      // 翻页后自动回到页首
+		routerMode: 'hash',  // 用 #/xxx 路由 —— GitHub Pages 不需要任何额外配置
+
+		/* ── 找不到页面时，自动加载 _404.md ───────────── */
+		notFoundPage: true,
+
+		/* ── 主题色 ──────────────────────────────────── */
+		themeColor: '#c0392b',
+
+		/* ── 代码块右上角的「复制」按钮 ───────────────── */
+		copyCode: {
+			buttonText: '复制',
+			errorText: '复制失败',
+			successText: '已复制',
+		},
+
+		/* ── 全文搜索 ────────────────────────────────── */
+		search: {
+			placeholder: '搜索教程…（按 / 或 Ctrl+K 聚焦）',
+			noData: '没找到相关内容',
+			depth: 3,          // 索引到三级标题 —— 各章的小节标题都在这一层
+			maxAge: 86400000,  // 本机缓存索引 1 天
+		},
+
+		/* ── 页面底部「上一章 / 下一章」───────────────── */
+		pagination: {
+			previousText: '← 上一章',
+			nextText: '下一章 →',
+			crossChapter: true,      // 按左侧目录的顺序跨章跳转
+			crossChapterText: true,  // 跨章时把章名也显示出来
+		},
+	};
+	</script>
+
+	<!-- 以下 4 个都是仓库里的本地文件，不依赖任何 CDN：
+	     断网可用、国内可用、不怕 CDN 哪天挂掉 -->
+	<script src="lib/docsify.min.js"></script>
+	<script src="lib/search.min.js"></script>
+	<script src="lib/copy-code.min.js"></script>
+	<script src="lib/pagination.min.js"></script>
+</body>
+</html>
