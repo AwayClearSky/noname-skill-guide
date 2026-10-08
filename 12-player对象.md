@@ -666,9 +666,11 @@ const n = player.getHistory("useSkill", evt => evt.skill === "tutorial_lunzhan")
 | --- | --- |
 | `judge(card)` | **进行判定**（返回可 await 的结果） |
 | `inRange(target)` | 目标**在不在攻击范围内** |
+| `inRangeOf(source)` | 我**在不在**别人的攻击范围内（反过来的问法） |
 | `distanceTo(target)` | 到目标的**距离** |
 | `canCompare(target)` | **能不能跟他拼点** |
 | `hasValueTarget(card, distance, includecard)` | 用这张牌**有没有划算的目标**（AI 用） |
+| `hasUsableCard(name, type)` | 他手上有没有一张**能当这张牌**用出去的牌 |
 | `getHandcardLimit()` | **手牌上限** |
 | `getAttackRange()` | **攻击范围** |
 | `getEquipRange()` | 装备提供的攻击范围 |
@@ -682,6 +684,8 @@ player.distanceTo(target);     // "多远" —— 数字
 
 ⭐ **别自己拿距离和攻击范围比大小** —— 引擎会在中间套一层 `globalFrom`/`globalTo` 修正（第 9 章的〖马术〗就是改这个的）。**用 `inRange` 一步到位。**
 
+⭐ **反过来的问法也有现成的：`player.inRangeOf(source)`** ＝ "我在不在 source 的攻击范围内"（源码就一句 `return source.inRange(this)`）。写"**你**在其攻击范围内"这类条件时用它，读起来正好和描述一致。
+
 **`canCompare`（拼点前置校验）**：
 
 ```js
@@ -691,6 +695,17 @@ if (player.canCompare(target)) {
 ```
 
 ⭐ **它一个方法就顶三个判断** —— 第 13 章讲拼点时会重点用。写拼点技能的 `filterTarget` 时**直接写 `player.canCompare(target)` 就行**，别再叠"不是自己""有手牌"。
+
+**想判断他手上有没有某张牌能用**，用 `hasUsableCard(name, type)`：
+
+```js
+if (player.hasUsableCard("sha")) { }              // 他手上有没有能当【杀】用的牌
+if (player.hasUsableCard("shan", "respond")) { }  // 他能不能打出【闪】
+```
+
+⭐ **第一参数是牌名**，不是"牌"本身 —— 判据是 `get.name(那张牌, 他)`，所以"在他手里会被视为【杀】"的牌也算数。
+
+⭐ **第二参数管场合**：不传 ⇒ 按"能不能用"算（还要过使用次数那道门）；传 `false` ⇒ 不管次数，只要是这张牌就算；传 `"use"` / `"respond"` ⇒ 分别问"能用" / "能打出"。
 
 ### 7.2 全场最多 / 最少
 

@@ -76,8 +76,8 @@
 | --- | --- | --- |
 | `useCard` | 使用牌（含"使用后"） | `player` |
 | `useCard0` / `useCard1` / `useCard2` | 使用牌的三个中间档（`useCard2`＝选完目标、**追加目标用这个**） | `player` |
-| `useCardToPlayer` / `useCardToPlayered` | 结算至某角色时 / 后 | `player` / `target` |
-| `useCardToTarget` / `useCardToTargeted` | 指定目标时 / 成为目标后 | `player` / `target` |
+| `useCardToPlayer` / `useCardToTarget` | **指定目标时** / **成为目标时**（前两档） | `player` / `target` |
+| `useCardToPlayered` / `useCardToTargeted` | **指定目标后** / **成为目标后**（后两档，最常用） | `player` / `target` |
 | `respond` / `respondSha` / `respondShan` | 打出牌 | `player` |
 | `shaMiss` / `shaHit` | 【杀】被【闪】抵消 / 命中 | `player` / `target` |
 | `useCard` / `respond`（`global`） | 别人用牌 / 打出牌也监听 —— **"全场有人用牌"就挂这个 role** | `global` |
@@ -148,6 +148,46 @@
 | `triggerHidden` / `triggerInvisible` | 暗置技 / 隐匿技触发（引擎内置询问明置） |
 | `roundStart` / `roundEnd` | 势力状态每轮结算 |
 | `changeCharacterAfter` | 换将（易位 / 变更副将 / 主副互换同一个核心事件） |
+
+---
+
+### 2.8 冷门与特殊时机
+
+<strong>① 状态机的四个"非正常出口"</strong>（每个事件都可能派发，不是正常走完的那条路）
+
+| 时机 | 什么时候派发 |
+| --- | --- |
+| `xxxOmitted` | 在 `Begin` 之前就 `finish()`／`cancel()` 了 ⇒ **只派发它，不派发 `Begin`** |
+| `xxxSkipped` | 被 `skipList` 跳过（**阶段被跳过走这条**，不派发 `Begin`／`End`／`After`） |
+| `xxxCancelled` | 事件被 `cancel()` 取消（⚠️ 拼写是**双 l**） |
+| `xxxInserted` | 事件插入时 |
+
+**② 开局前后**（比 `gameDrawBegin` 还早的那几个）
+
+| 时机 | 含义 | 备注 |
+| --- | --- | --- |
+| `chooseCharacterBefore` / `Begin` / `End` / `After` | 选将事件四段 | 理论可用，用前实测 |
+| `gameStart` | 开局 | ⚠️ 它是**裸 trigger、不是事件** ⇒ **不存在** `gameStartBefore`／`Begin`／`End`／`After` |
+| `gameDrawBefore` | 初始发牌**前** | 比 `gameDrawBegin` 只早一步（国战的 `_viewnext` 就用它） |
+| `enterGame` | 角色**入场** | ⚠️ 身份局／国战的**开局主线不调用它** —— 只在换人、棋子登场、塔防等场景触发 |
+| `gameDrawEnd` / `gameDrawAfter` | 发牌结束／之后 | ⚠️ 在此之前，`gain`／`lose`／`loseAsync` 这些 hook 会被**直接吞掉** |
+
+> ⭐ 想抓"开局"，官方惯例是**两个都挂**：`trigger: { global: "gameStart", player: "enterGame" }`。
+
+**③ 模板式时机**（把技能名／牌名代进去就行，引擎不需要预先注册）
+
+| 写法 | 什么时候派发 |
+| --- | --- |
+| `pre_[技能名]` | 技能预处理（配合 `chooseButton.backup.precontent`） |
+| `[技能名]_cost` / `[技能名]ContentBefore` / `[技能名]ContentAfter` | 技能自身事件的两头 |
+| `{牌名}` / `{牌名}Cancel` / `{牌名}ContentBefore` / `{牌名}ContentAfter` | 使用该牌时／被取消／结算前后 |
+| `lose_{牌名}` / `equip_{牌名}` | 失去／使用某张**特定的**牌 |
+
+**④ 只喊"裸名"的那些事件**
+
+⚠️ 不是所有事件都会自动派发 `Before`／`Begin`／`End`／`After` —— 有些名字是 content 里**手写**喊出来的（`damageBegin1~4`、`phaseUse` 那几档都是）。**能用派生名就一律用派生名。**
+
+怎么确认一个名字是不是手写派的？搜引擎源码里的 `trigger("<名字>")` —— 搜不到又不在自动派生规则里，那就是不存在的名字。
 
 ---
 
