@@ -129,8 +129,8 @@ _poptipMap.forEach((value, key) => {
 **怎么调**：
 
 ```js
-// 签名：player.chooseToDebate(参与者数组 或 { list: [...] })
-await player.chooseToDebate([player, ...targets]).set("callback", async (event, trigger, player) => {
+// 签名：player.chooseToDebate({ list: [...], args: [...] })
+await player.chooseToDebate({ list: [player, ...targets], args: [] }).set("callback", async (event, trigger, player) => {
 	const { debateResult: result } = event;
 });
 ```
@@ -208,17 +208,19 @@ async content(event, trigger, player) {
 
 ```js
 const result = await player.discoverCard();          // 从整副牌堆里随机亮三张
-const result2 = await player.discoverCard(list, 3);  // 从 list 里亮三张
+const result2 = await player.discoverCard(list, { num: 3 });  // 从 list 里亮三张
 ```
 
-**可变参数**（跟在 `list` 后面，顺序随意）：
+**对象参数**（跟在 `list` 后面 —— 只有 `list` 还是位置参数）：
 
-| 参数 | 作用 |
+| 字段 | 作用 |
 | --- | --- |
-| 一个**字符串** | 提示语；若字符串是 `"use"` 则**直接使用**选中的牌；`"nogain"` 则**不获得** |
-| 一个**数字** | 亮出的张数 |
-| 一个**布尔** | 是否 `forced`（默认就是强制） |
-| 一个**函数** | AI 选牌倾向 |
+| `prompt` | 提示语 |
+| `use` | 传 `true` 则**直接使用**选中的牌 |
+| `nogain` | 传 `true` 则**不获得** |
+| `num` | 亮出的张数 |
+| `forced` | 是否强制（默认就是强制） |
+| `ai` | AI 选牌倾向 |
 
 ### 2.5 护甲：`target.changeHujia(num, ...)`
 
@@ -498,7 +500,7 @@ tutorial_beishui: {
 	enable: "phaseUse",
 	async cost(event, trigger, player) {
 		const result = await player
-			.chooseControl(["选项一", "选项二", "背水！", "cancel2"])
+			.chooseControl({ controls: ["选项一", "选项二", "背水！", "cancel2"] })
 			.set("choiceList", ["摸一张牌", "回复1点体力", "背水！失去1点体力，并执行以上所有选项"])
 			.set("prompt", get.prompt(event.skill))
 			.set("ai", function () {

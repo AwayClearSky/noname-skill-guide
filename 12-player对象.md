@@ -105,17 +105,17 @@ player.countCards("e", "sha");                        // 装备区里叫"杀"的
 | `loseToDiscardpile(cards)` | **置入弃牌堆**（≠弃置） |
 | `give(cards, target, visible)` | **交给**某个角色 |
 
-**`gain` 的第二个参数是"从哪来"** —— 这是它最常被问的地方：
+**"从哪来"写在 `source` 字段上** —— 这是 `gain` 最常被问的地方：
 
 ```js
-await player.gain(cards, "gain2");
-// "gain2" 是一种"获得方式"，主要影响动画与日志的措辞
+await player.gain({ cards, animate: "gain2" });
+// animate 是"获得方式"，主要影响动画与日志的措辞
 
-await player.gain(cards, target, "give", "bySelf");
+await player.gain({ cards, source: target, animate: "give", bySelf: true });
 // 从 target 那里获得（明示来源），走"给"的动画
 ```
 
-⭐ **最常用的几个来源关键字**：`"gain2"`（凭空获得，最通用）、`"draw"`（摸牌）。
+⭐ **`animate` 最常用的几个关键字**：`"gain2"`（凭空获得，最通用）、`"draw"`（摸牌）。
 
 **`discard` 与 `modedDiscard` 的区别**（第 11 章速查提过，这里说清）：
 
@@ -123,10 +123,10 @@ await player.gain(cards, target, "give", "bySelf");
 
 ```js
 // 锁定技效果，无条件弃置
-await player.discard(cards);
+await player.discard({ cards });
 
 // "弃置其所有牌" —— 尊重"不可弃置"类技能，用这个
-await player.modedDiscard(player.getCards("he"));
+await player.modedDiscard({ cards: player.getCards("he") });
 ```
 
 ⭐ **什么时候用哪个？** 记住：**玩家的主动弃牌用 `discard`；描述里写"弃置…所有牌"这种大规模动作，用 `modedDiscard`。**
@@ -187,7 +187,7 @@ player.canUse("sha", target, true, false);
 if (!player.hasUseTarget({ name: "sha", isCard: true })) {
 	return;         // 一张【杀】都打不出去，别弹框
 }
-await player.chooseUseTarget({ name: "sha", isCard: true }, true, false);
+await player.chooseUseTarget({ card: { name: "sha", isCard: true }, forced: true, addCount: false });
 ```
 
 > ⚠️ **忘了这个兜底，会出现"弹了个框但什么都不能选"的空框。**
@@ -209,7 +209,7 @@ await player.chooseUseTarget({ name: "sha", isCard: true }, true, false);
 
 ```js
 if (target.countDiscardableCards(player, "he")) {
-	await target.chooseToDiscard("he", true);
+	await target.chooseToDiscard({ position: "he", forced: true });
 }
 ```
 
@@ -909,7 +909,7 @@ tutorial_lunzhan: {
 ```js
 async content(event, trigger, player) {
 	const target = event.targets[0];
-	await target.chooseToDiscard("he", true);
+	await target.chooseToDiscard({ position: "he", forced: true });
 },
 ```
 
@@ -1045,7 +1045,7 @@ async content(event, trigger, player) {
 async content(event, trigger, player) {
 	const target = event.targets[0];
 	if (target.countDiscardableCards(player, "he")) {
-		await target.chooseToDiscard("he", true);
+		await target.chooseToDiscard({ position: "he", forced: true });
 	}
 },
 ```
