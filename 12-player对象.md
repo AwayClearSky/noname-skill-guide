@@ -804,13 +804,76 @@ player.popup("sha");          // 头顶显示"杀"
 
 ### 8.4 进阶：`player.when(...)`
 
-`player.when(时机名)` 是"**给自己挂一个一次性的时机监听**"，写"之后某个时点再做一件事"时很方便：
+`player.when(时机名)` 是「**给自己挂一个一次性的时机监听**」—— 写"过一会儿再做一件事"时特别省事。它内部就是**现场造一个临时技能**（名字随机，形如 `player_when_xxxxxxxx`）挂到你身上，**触发一次就自动摘掉**。
+
+**它能收几种「时机名」**（和技能 `trigger` 一样）：
+
+| 你写 | 等于 |
+| --- | --- |
+| `when("phaseJieshuBegin")` | `{ player: "phaseJieshuBegin" }` |
+| `when(["phaseJieshuBegin", "phaseZhunbeiBegin"])` | `{ player: [...] }` |
+| `when({ global: "phaseJieshuBegin" })` | 原样（旁听别人的回合也行） |
+
+**基本形态**：
 
 ```js
-player.when({ global: "phaseJieshuBegin" }).step(async (event, trigger, player) => {
-	// 到"结束阶段开始"时执行一次，然后自动摘掉
+// 到"本回合结束阶段开始"时执行一次，然后自动摘掉
+player.when({ player: "phaseJieshuBegin" }).step(async (event, trigger, player) => {
+	player.unmarkSkill("rehuomo");        // 官方〖祸末〗（clan/skill.js）原样
 });
 ```
+
+⭐ **链式上能挂的几个方法**：
+
+| 方法 | 干什么 |
+| --- | --- |
+| `.step(fn)` | 挂"到点时执行的内容"，**支持闭包**（能直接用外面的变量）—— 首选 |
+| `.filter(fn)` | 加条件：返回假 ⇒ 这次不执行；**而且机会不会被消耗** —— 下个时机会再判一次 |
+| `.then(fn)` | 早期写法，也能挂内容；但普通函数会被转成字符串再编译，**闭包里的变量会丢** —— 想用闭包就写 `.step` |
+| `.popup(str)` / `.translation(str)` | 给这个临时技能一个弹字／显示名 |
+| `.assign(obj)` | 往临时技能上补别的字段（如 `mark`、`intro`） |
+| `.finish()` | 配合第 2 个参数 `false` 用（见例④） |
+
+**多给几个例子**：
+
+```js
+// ① 带条件：只有手牌多于 3 张才补牌；不满足就留着，下次时机再判
+player.when("phaseJieshuBegin")
+	.filter((event, player) => player.countCards("h") > 3)
+	.step(async (event, trigger, player) => {
+		await player.draw();
+	});
+```
+
+```js
+// ② 一次挂两个时机：哪个先到就在哪执行，且只执行一次
+player.when(["phaseJieshuBegin", "phaseDrawBegin1"]).step(async (event, trigger, player) => {
+	await player.draw();
+});
+```
+
+```js
+// ③ 给它起个名字（弹字／显示名），玩家能看懂这是啥
+player.when("phaseJieshuBegin")
+	.translation("余韵")
+	.popup("余韵")
+	.step(async (event, trigger, player) => {
+		await player.recover();
+	});
+```
+
+```js
+// ④ 先造出来、晚点再决定挂不挂：第 2 个参数 instantlyAdd = false，最后 .finish() 才生效
+const listener = player.when("phaseJieshuBegin", false);
+if (get.attitude(player, target) > 0) {
+	listener.step(async (event, trigger, player) => {
+		await target.draw();
+	});
+	listener.finish();      // 现在才真正挂上去
+}
+```
+
+⚠️ **`.filter()` 不满足，不等于作废**：这个临时技能只在**真的发动**那一刻才被标记"已用掉"（`src/noname/library/element/content.ts` 里那句 `lib.skill[event.skill].triggered = true`）；条件不满足时它还在身上，下个时机会重新判。这正是①②能"挂了不一定响"的道理。
 
 **它和你写 `subSkill` 的区别**：
 
@@ -818,10 +881,15 @@ player.when({ global: "phaseJieshuBegin" }).step(async (event, trigger, player) 
 | --- | --- | --- |
 | 写在哪 | 技能对象里（静态） | `content` 里（动态挂） |
 | 活多久 | 技能在就一直在 | **触发一次就摘掉** |
+| 条件 | `filter` 常驻 | `.filter()` 临时加 |
 
-⭐ **"只此一次"的后续效果用 `player.when` 最省事** —— 不用另开子技，也不用自己管"用完删掉"。
+⭐ **"只此一次"的后续效果用 `player.when` 最省事** —— 不用另开子技，也不用自己管"用完删掉"。官方几十个技能在用（`src/character/` 里搜 `.when(`，如〖祸末〗`rehuomo`、〖通博〗`tongbo`）。
 
-> ⚠️ **但它不能跨回合存活**（技能事件结束就没了）。**要跨回合的后续效果，还得用 `addTempSkill` + 子技**（第 9 章那套）。
+> ⚠️ **但它不能永久存在** —— 它是一次性的：**触发一次，引擎就把这个临时技删掉**（`src/noname/library/element/content.ts` 里那句注释「删除 when 生成的临时技能」＝ `player.removeSkill(event.skill)`，并顺带清掉 `lib.skill` / `lib.translate`）。
+
+> ⚠️ **别把这条理解反了**：**它并不是说过完这个回合就没了** —— 在**触发之前**，这个监听一直挂在你身上，**可以跨好几个回合**（你挂 `roundStart`，就得等到下一轮的轮开始才响，这一整轮里它都待着）。所以"一次性"说的是**它只响一次**，不是说它寿命只有一回合。
+
+> 💡 真想要**长期持续生效**（响很多次、或一直挂着），才得改用 `addTempSkill` / `addSkill` ＋ 子技（第 9 章那套）。
 
 ---
 
